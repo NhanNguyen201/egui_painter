@@ -1,10 +1,39 @@
 
-use egui::{Color32, Id, Pos2};
+use egui::{Color32, Id, Pos2, Vec2};
 use egui::{ColorImage, TextureHandle};
 use rand::random_range;
 use crate::app::components::utils::draw_tool::Pencil;
 use crate::app::components::utils::new_rand_id;
 
+#[derive(Clone, PartialEq)]
+pub struct LayersContainer {
+    pub layers: Vec<Layer>,
+    pub transform: Transform
+}
+
+impl Default for LayersContainer {
+    fn default() -> Self {
+        Self {
+            layers: Vec::new(),
+            transform: Transform::default()
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct Transform {
+    pub position: Pos2,
+    pub scale: f32
+}
+
+impl Default for Transform {
+    fn default() -> Self {
+        Self {
+            position: Pos2::ZERO,
+            scale: 1.
+        }
+    }
+}
 
 #[derive(Clone, PartialEq)]
 pub struct Layer {
@@ -16,12 +45,12 @@ pub struct Layer {
 
 #[derive(Clone, PartialEq)]
 pub struct LayerTexture {
-   
     pub texture_handle: Option<TextureHandle>,
     pub image_data: ColorImage,
     pub width: usize,
     pub height: usize,
 }
+
 fn random_draw() -> bool {
     random_range(0.0..1.0) > 0.5
 }

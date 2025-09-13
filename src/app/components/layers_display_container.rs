@@ -3,11 +3,11 @@ use super::AppComponentExt;
 use crate::app::{components::utils::{layer::{Layer, LayerTexture}, new_rand_id}, App};
 
 
-pub struct LayerContainer;
+pub struct LayersDisplayContainer;
 
 
 
-impl AppComponentExt for LayerContainer {
+impl AppComponentExt for LayersDisplayContainer {
     type Context = App;
     fn add(ctx: &mut Self::Context, ui: &mut eframe::egui::Ui) {
         let container_height: f32 = 450.;
@@ -28,8 +28,8 @@ impl AppComponentExt for LayerContainer {
                     ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                 }
                 if add_layer_sense.clicked() {
-                    let new_layer: Layer = Layer {id: new_rand_id(), name: format!("Layer {}", (ctx.app_state.layers.len() + 1).to_string()), is_visible: true, texture: LayerTexture::new(ctx.app_settings.canvas_size.x as usize, ctx.app_settings.canvas_size.y as usize)};
-                    ctx.app_state.layers.insert(0, new_layer.clone());
+                    let new_layer: Layer = Layer {id: new_rand_id(), name: format!("Layer {}", (ctx.app_state.layers_container.layers.len() + 1).to_string()), is_visible: true, texture: LayerTexture::new(ctx.app_settings.canvas_size.x as usize, ctx.app_settings.canvas_size.y as usize)};
+                    ctx.app_state.layers_container.layers.insert(0, new_layer.clone());
                     ctx.app_state.current_layer = Some(new_layer.id);
                 }
                 ui.add_space(10.);
@@ -39,7 +39,7 @@ impl AppComponentExt for LayerContainer {
                     ui.set_height(container_height);
                     ui.set_width(ui.available_width());
                     ui.vertical(|ui| {
-                        for (_layer_idx, layer) in ctx.app_state.layers.iter_mut().enumerate() {
+                        for (_layer_idx, layer) in ctx.app_state.layers_container.layers.iter_mut().enumerate() {
                             
                             let (layer_rect, layer_painter) = ui.allocate_painter(layer_size, Sense::click());
                             layer_painter.rect_filled(layer_rect.rect, 0.0, Color32::from_rgb(100, 100, 100));

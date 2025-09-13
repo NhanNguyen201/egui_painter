@@ -1,7 +1,7 @@
 pub mod canvas;
 pub mod color_palette;
 pub mod utils;
-pub mod layers_container;
+pub mod layers_display_container;
 pub mod tools_bar;
 pub mod color_picker;
 

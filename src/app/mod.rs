@@ -13,10 +13,11 @@ use rfd::FileDialog;
 
 use crate::app::components::utils::create_paint::NewPaintSetting;
 use crate::app::components::utils::image_color::composite_layers;
+use crate::app::components::utils::layer::LayersContainer;
 use crate::app::components::{
     color_palette::ColorPalette,
     color_picker::ColorPicker,
-    layers_container::LayerContainer,
+    layers_display_container::LayersDisplayContainer,
     tools_bar::ToolBar
 };
 
@@ -61,7 +62,7 @@ impl Default for AppSettings {
 pub struct AppState {
     is_dragging: bool,
     poses: Vec<Pos2>,
-    layers: Vec<Layer>,
+    layers_container: LayersContainer,
     
     current_layer: Option<Id>,
   
@@ -81,6 +82,8 @@ impl AppState {
             texture: LayerTexture::new(settings.canvas_size.x as usize, settings.canvas_size.y as usize)
         };
         let mut palette: Vec<PaintColor> = Vec::new();
+        let mut layers_container = LayersContainer::default();
+        layers_container.layers.push(default_layer.clone());
         palette.push(PaintColor{color: Color32::BLACK, id: new_rand_id()});
         palette.push(PaintColor{color: Color32::WHITE, id: new_rand_id()});
 
@@ -93,12 +96,12 @@ impl AppState {
             is_dragging: false,
             poses: Vec::new(),
             current_draw_tool: Some(default_tool),
-            
+            layers_container: layers_container,
 
             color_palette: palette.clone(),
             current_color: Some(palette[0].clone()),
             current_stroke_width: 10.,
-            layers: vec![default_layer.clone()],
+           
             
             current_layer: Some(default_layer.id)
         }
@@ -121,7 +124,7 @@ impl eframe::App for App {
                 });
                 ui.add_space(20.);
                 Canvas::add( self, ui);
-                LayerContainer::add(self, ui);
+                LayersDisplayContainer::add(self, ui);
             });
         });  
     }
@@ -174,7 +177,7 @@ impl App {
             PathBuf::from(r"C:\")
         };
         // let path = base_dir.join("final_output.png");
-        let color_vec = &self.app_state.layers.clone().iter().rev().map(|layer| layer.texture.image_data.clone()).collect::<Vec<ColorImage>>();
+        let color_vec = &self.app_state.layers_container.layers.clone().iter().rev().map(|layer| layer.texture.image_data.clone()).collect::<Vec<ColorImage>>();
         let composites = composite_layers(&color_vec);
         let [width, height] = composites.size;
 
