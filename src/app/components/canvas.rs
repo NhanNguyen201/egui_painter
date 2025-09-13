@@ -1,10 +1,7 @@
-use egui::{Color32, Frame, Key, Pos2, Sense, TextureOptions, Vec2};
+use egui::{Color32, Frame, PointerButton, Pos2, Sense, TextureOptions, Vec2};
 
 use super::AppComponentExt;
-use crate::app::{
-    components::utils::pencil_cursor::DirLocked,
-     App
-};
+use crate::app::App;
 pub struct Canvas;
 
 
@@ -23,11 +20,11 @@ impl AppComponentExt for Canvas {
             let canva_sense = ui.allocate_rect(canvas_rect, Sense::click_and_drag());
             canvas_container_painter.rect_filled(canvas_rect,0.0, Color32::from_rgb(200, 200, 200));
             
-            if canva_sense.drag_started() {
+            if  canva_sense.dragged_by(PointerButton::Primary) {
                 ctx.app_state.is_dragging = true;
             }
            
-            if canva_sense.clicked() || (canva_sense.is_pointer_button_down_on() &&  ctx.app_state.is_dragging) {
+            if canva_sense.clicked_by(PointerButton::Primary) || (canva_sense.dragged() &&  ctx.app_state.is_dragging) {
              
                 let pos = cursor.get_pos() - canvas_rect.min.to_vec2();
                 let color = ctx.app_state.current_color.clone().unwrap_or_default().color;
@@ -37,7 +34,7 @@ impl AppComponentExt for Canvas {
                     }
                 }
             }
-            if canva_sense.drag_stopped() {
+            if canva_sense.drag_stopped_by(PointerButton::Primary) {
                 ctx.app_state.is_dragging = false
             }
             
@@ -59,26 +56,8 @@ impl AppComponentExt for Canvas {
             if ctx.app_state.current_draw_tool.clone().is_some() && canva_sense.hovered(){
                 let pos = canva_sense.hover_pos().unwrap_or_default();
 
-                let key_x = ui.ctx().input(|i| i.key_released(Key::X));
-                let key_y = ui.ctx().input(|i| i.key_released(Key::Y));
                 
-                if key_x {
-                   
-                    cursor.settings.dir_locked = if cursor.settings.dir_locked == DirLocked::X {
-                        DirLocked::None
-                    } else {
-                        DirLocked::X 
-                    }
-                }
-
-                if key_y {
-                     cursor.settings.dir_locked = if cursor.settings.dir_locked == DirLocked::Y {
-                        DirLocked::None
-                    } else {
-                        DirLocked::Y
-                    }
-                }
-                
+                cursor.settings.add_lock_event(ui);
                 cursor.update_pos(pos);
                 cursor.ui(&canvas_container_painter);
                
