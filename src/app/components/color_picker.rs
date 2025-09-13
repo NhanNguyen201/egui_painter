@@ -1,4 +1,4 @@
-use egui::{Align2, Color32, CursorIcon, FontFamily, FontId, Frame, Pos2, Sense, Vec2};
+use egui::{Align2, Color32, CursorIcon, FontFamily, FontId, Frame, PointerButton, Pos2, Sense, Vec2};
 use super::AppComponentExt;
 use crate::app::App;
 
@@ -48,13 +48,13 @@ impl AppComponentExt for ColorPicker {
                 ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
             }
 
-            if r_rect_sense.drag_started() {
+            if r_rect_sense.dragged_by(PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
 
                 ctx.app_settings.color_picker.is_dragging = true;
             }
 
-            if r_rect_sense.clicked() ||(r_rect_sense.dragged() && ctx.app_settings.color_picker.is_dragging) {
+            if r_rect_sense.clicked_by(PointerButton::Primary) ||(r_rect_sense.dragged() && ctx.app_settings.color_picker.is_dragging) {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
 
                 let interaction_pos = r_rect_sense.interact_pointer_pos();
@@ -64,7 +64,7 @@ impl AppComponentExt for ColorPicker {
                     ctx.app_settings.color_picker.r_channel = ((1. - y_pos) * max_channel).floor();
                 }
             }
-            if r_rect_sense.drag_stopped() {
+            if r_rect_sense.drag_stopped_by(PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::Alias);
 
                 ctx.app_settings.color_picker.is_dragging = false;
@@ -85,13 +85,13 @@ impl AppComponentExt for ColorPicker {
             if g_rect_sense.hovered() {
                 ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
             }
-            if g_rect_sense.drag_started() {
+            if g_rect_sense.dragged_by(PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
 
                 ctx.app_settings.color_picker.is_dragging = true;
             }
 
-            if g_rect_sense.clicked() || (g_rect_sense.dragged() && ctx.app_settings.color_picker.is_dragging) {
+            if g_rect_sense.clicked_by(PointerButton::Primary) || (g_rect_sense.dragged() && ctx.app_settings.color_picker.is_dragging) {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
 
                 let interaction_pos = g_rect_sense.interact_pointer_pos();
@@ -103,7 +103,7 @@ impl AppComponentExt for ColorPicker {
                 }
             }
 
-            if g_rect_sense.drag_stopped() {
+            if g_rect_sense.drag_stopped_by(PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::Alias);
                 
                 ctx.app_settings.color_picker.is_dragging = false;
@@ -126,12 +126,12 @@ impl AppComponentExt for ColorPicker {
                 ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
             }
 
-            if b_rect_sense.drag_started() {
+            if b_rect_sense.dragged_by(PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
 
                 ctx.app_settings.color_picker.is_dragging = true;
             }
-            if b_rect_sense.clicked() ||(b_rect_sense.dragged() && ctx.app_settings.color_picker.is_dragging) {
+            if b_rect_sense.clicked_by(PointerButton::Primary) ||(b_rect_sense.dragged() && ctx.app_settings.color_picker.is_dragging) {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
 
                 let interaction_pos = b_rect_sense.interact_pointer_pos();
@@ -142,7 +142,7 @@ impl AppComponentExt for ColorPicker {
 
                 }
             }
-            if b_rect_sense.drag_stopped() {
+            if b_rect_sense.drag_stopped_by(PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::Alias);
 
                 ctx.app_settings.color_picker.is_dragging = false;
@@ -163,12 +163,12 @@ impl AppComponentExt for ColorPicker {
                 ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
             }
 
-            if a_rect_sense.drag_started() {
+            if a_rect_sense.dragged_by(PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
 
                 ctx.app_settings.color_picker.is_dragging = true;
             }
-            if a_rect_sense.clicked() || (a_rect_sense.dragged() && ctx.app_settings.color_picker.is_dragging) {
+            if a_rect_sense.clicked_by(PointerButton::Primary) || (a_rect_sense.dragged() && ctx.app_settings.color_picker.is_dragging) {
                 ui.ctx().set_cursor_icon(CursorIcon::ResizeVertical);
 
                 let interaction_pos = a_rect_sense.interact_pointer_pos();
@@ -179,7 +179,7 @@ impl AppComponentExt for ColorPicker {
 
                 }
             }
-            if a_rect_sense.drag_stopped() {
+            if a_rect_sense.drag_stopped_by(PointerButton::Primary) {
                 ui.ctx().set_cursor_icon(CursorIcon::Alias);
 
                 ctx.app_settings.color_picker.is_dragging = false;
@@ -193,7 +193,7 @@ impl AppComponentExt for ColorPicker {
             if result_sense.hovered() {
                 ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
             }
-            if result_sense.clicked() {
+            if result_sense.clicked_by(PointerButton::Primary) {
                 if let Some(color) = &mut ctx.app_state.current_color {
                     if let Some(find_color) = ctx.app_state.color_palette.iter_mut().find(|c| c.id == color.id) {
                         find_color.color = result_color.clone();

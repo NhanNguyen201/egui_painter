@@ -1,6 +1,6 @@
 use std::ops::RangeInclusive;
 
-use egui::{Align2, Color32, CursorIcon, FontFamily, FontId, Pos2, Sense, Stroke, StrokeKind, Vec2};
+use egui::{Align2, Color32, CursorIcon, FontFamily, FontId, PointerButton, Pos2, Sense, Stroke, StrokeKind, Vec2};
 
 use crate::app::{components::AppComponentExt, App};
 
@@ -27,7 +27,7 @@ impl AppComponentExt for ToolBar {
                  if new_paint_sense.hovered() {
                     ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                 }
-                if new_paint_sense.clicked() {
+                if new_paint_sense.clicked_by(PointerButton::Primary) {
                     ctx.app_settings.new_paint_settings.is_open = true;
                 }
 
@@ -40,7 +40,7 @@ impl AppComponentExt for ToolBar {
                  if add_base_dir_sense.hovered() {
                     ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                 }
-                if add_base_dir_sense.clicked() {
+                if add_base_dir_sense.clicked_by(PointerButton::Primary) {
                     ctx.set_base_directory();
                 }
 
@@ -52,7 +52,7 @@ impl AppComponentExt for ToolBar {
                 if export_image_sense.hovered() {
                     ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                 }
-                if export_image_sense.clicked() {
+                if export_image_sense.clicked_by(PointerButton::Primary) {
                     let _saved = ctx.save_to_image();
                 }
                 if ctx.app_settings.new_paint_settings.is_open {
@@ -74,11 +74,11 @@ impl AppComponentExt for ToolBar {
                             ui.separator();
                             ui.horizontal(|ui| {
                                 let cancel_button = ui.button("Close");
-                                if cancel_button.clicked() {
+                                if cancel_button.clicked_by(PointerButton::Primary) {
                                     ctx.app_settings.new_paint_settings.is_open = false;
                                 }
                                 let confirm_button= ui.button("Confirm");
-                                if confirm_button.clicked() {
+                                if confirm_button.clicked_by(PointerButton::Primary) {
                                     ctx.app_settings.new_paint_settings.is_open = false;
                                     ctx.re_new();
                                 }
@@ -110,7 +110,7 @@ impl AppComponentExt for ToolBar {
                     if button_sense.hovered() {
                         ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                     }
-                    if button_sense.clicked() {
+                    if button_sense.clicked_by(PointerButton::Primary) {
                         ctx.app_state.current_draw_tool = Some(tool.clone());
                         ctx.app_settings.pencil_cursor.set_pencil(tool.pencil.clone());
                     }

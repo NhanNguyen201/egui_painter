@@ -1,4 +1,4 @@
-use egui::{ Align2, Color32, CursorIcon, FontFamily, FontId, Frame, Pos2, Sense, Stroke, StrokeKind, Vec2};
+use egui::{ Align2, Color32, CursorIcon, FontFamily, FontId, Frame, PointerButton, Pos2, Sense, Stroke, StrokeKind, Vec2};
 
 use super::AppComponentExt;
 use crate::app::{components::utils::{layer::PaintColor, new_rand_id}, App};
@@ -44,7 +44,7 @@ impl AppComponentExt for ColorPalette {
                 if color_block_sense.hovered() {
                     ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                 }
-                if color_block_sense.clicked() {
+                if color_block_sense.clicked_by(PointerButton::Primary) {
                     ctx.app_settings.color_picker.r_channel = paint_color.color.r() as f32;
                     ctx.app_settings.color_picker.g_channel = paint_color.color.g() as f32;
                     ctx.app_settings.color_picker.b_channel = paint_color.color.b() as f32;
@@ -63,7 +63,7 @@ impl AppComponentExt for ColorPalette {
             palette_painter.rect_filled(add_color_rect, 2., Color32::WHITE);
             palette_painter.text(add_color_rect.center(), Align2::CENTER_CENTER, "+", FontId::new(12., FontFamily::Proportional), Color32::BLACK);
             let add_color_sense = ui.allocate_rect(add_color_rect, Sense::click());
-            if add_color_sense.clicked() {
+            if add_color_sense.clicked_by(PointerButton::Primary) {
                 
                 ctx.app_state.color_palette.push(PaintColor { color: Color32::BLACK, id: new_rand_id() });
                 

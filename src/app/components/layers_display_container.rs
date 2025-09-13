@@ -1,4 +1,4 @@
-use egui::{Align2, Color32, CursorIcon, FontFamily, FontId, Frame, Pos2, Sense, Vec2};
+use egui::{Align2, Color32, CursorIcon, FontFamily, FontId, Frame, PointerButton, Pos2, Sense, Vec2};
 use super::AppComponentExt;
 use crate::app::{components::utils::{layer::{Layer, LayerTexture}, new_rand_id}, App};
 
@@ -27,7 +27,7 @@ impl AppComponentExt for LayersDisplayContainer {
                 if add_layer_sense.hovered() {
                     ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                 }
-                if add_layer_sense.clicked() {
+                if add_layer_sense.clicked_by(PointerButton::Primary) {
                     let new_layer: Layer = Layer {id: new_rand_id(), name: format!("Layer {}", (ctx.app_state.layers_container.layers.len() + 1).to_string()), is_visible: true, texture: LayerTexture::new(ctx.app_settings.canvas_size.x as usize, ctx.app_settings.canvas_size.y as usize)};
                     ctx.app_state.layers_container.layers.insert(0, new_layer.clone());
                     ctx.app_state.current_layer = Some(new_layer.id);
@@ -54,7 +54,7 @@ impl AppComponentExt for LayersDisplayContainer {
                              if layer_rect.hovered() {
                                 ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                              }
-                            if layer_rect.clicked() {
+                            if layer_rect.clicked_by(PointerButton::Primary) {
                                 ctx.app_state.current_layer = Some(layer.id);
                             }
                         
@@ -69,7 +69,7 @@ impl AppComponentExt for LayersDisplayContainer {
                             }
                             let visible_sense =  ui.allocate_rect(visible_rect_container, Sense::click());
                           
-                            if visible_sense.clicked() {
+                            if visible_sense.clicked_by(PointerButton::Primary) {
                                 layer.is_visible = !layer.is_visible;
                             }
                             
