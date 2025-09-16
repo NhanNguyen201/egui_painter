@@ -8,14 +8,20 @@ use crate::app::components::utils::new_rand_id;
 #[derive(Clone, PartialEq)]
 pub struct LayersContainer {
     pub layers: Vec<Layer>,
-    pub transform: Transform
+    pub transform: Transform,
+    pub is_dragged: bool,
+    pub dragged_pos: Pos2,
+    pub dragged_offset: Vec2 
 }
 
 impl Default for LayersContainer {
     fn default() -> Self {
         Self {
             layers: Vec::new(),
-            transform: Transform::default()
+            transform: Transform::default(),
+            is_dragged: false,
+            dragged_pos: Pos2::ZERO,
+            dragged_offset: Vec2::ZERO
         }
     }
 }
@@ -47,8 +53,7 @@ pub struct Layer {
 pub struct LayerTexture {
     pub texture_handle: Option<TextureHandle>,
     pub image_data: ColorImage,
-    pub width: usize,
-    pub height: usize,
+    pub layer_size: Vec2
 }
 
 fn random_draw() -> bool {
@@ -64,8 +69,7 @@ impl LayerTexture {
         Self {
             texture_handle: None,
             image_data,
-            width,
-            height,
+            layer_size: Vec2::new(width as f32, height as f32)
         }
     }
     pub fn paint_at(&mut self, pos: Pos2, tool: Pencil, brush_size: f32, color: Color32) {
@@ -82,13 +86,13 @@ impl LayerTexture {
                         let py = y as i32 + dy;
                         
                         if px >= 0 && py >= 0 && 
-                        (px as usize) < self.width && 
-                        (py as usize) < self.height &&
+                        (px as usize) < self.layer_size.x.floor() as usize && 
+                        (py as usize) < self.layer_size.y.floor() as usize &&
                             random_draw()
                         {
                             let dist_sq = dx * dx + dy * dy;
                             if dist_sq <= radius * radius {
-                                let idx = py as usize * self.width + px as usize;
+                                let idx = py as usize * self.layer_size.x.floor() as usize + px as usize;
                                 self.image_data.pixels[idx] = color;
                             }
                         }
@@ -103,12 +107,12 @@ impl LayerTexture {
                         let py = y as i32 + dy;
                         
                         if px >= 0 && py >= 0 && 
-                        (px as usize) < self.width && 
-                        (py as usize) < self.height 
+                        (px as usize) < self.layer_size.x.floor() as usize && 
+                        (py as usize) < self.layer_size.y.floor() as usize 
                         {
                             let dist_sq = dx * dx + dy * dy;
                             if dist_sq <= radius * radius {
-                                let idx = py as usize * self.width + px as usize;
+                                let idx = py as usize * self.layer_size.x.floor() as usize + px as usize;
                                 self.image_data.pixels[idx] = color;
                             }
                         }
@@ -125,9 +129,9 @@ impl LayerTexture {
                         let py = y as i32 + dy;
                         
                         if px >= 0 && py >= 0 && 
-                        (px as usize) < self.width && 
-                        (py as usize) < self.height {
-                            let idx = py as usize * self.width + px as usize;
+                        (px as usize) < self.layer_size.x.floor() as usize && 
+                        (py as usize) < self.layer_size.y.floor() as usize {
+                            let idx = py as usize * self.layer_size.x.floor() as usize + px as usize;
 
                             self.image_data.pixels[idx] = Color32::from_white_alpha(0);
                         }
