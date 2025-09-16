@@ -1,7 +1,7 @@
 use egui::{Color32, Event, Frame, PointerButton, Pos2, Sense, TextureOptions, Vec2};
 
 use super::AppComponentExt;
-use crate::app::{components::utils::layer, App};
+use crate::app::App;
 pub struct Canvas;
 
 
@@ -11,7 +11,7 @@ impl AppComponentExt for Canvas {
     fn add(ctx: &mut Self::Context, ui: &mut eframe::egui::Ui) {
         Frame::canvas(ui.style()).outer_margin(0.).show(ui, |ui| {
            
-            let container_canvas_size =  Vec2::new(900., 600.);
+            let container_canvas_size =  Vec2::new(1200., 700.);
             let background_block_size = 50.;
             let background_block_color = Vec::from([Color32::from_rgb(150, 150, 150), Color32::from_rgb(50, 50, 50)]);
             // Make the canvas canvas_container_painter clip to the canvas area
@@ -80,7 +80,7 @@ impl AppComponentExt for Canvas {
                 }
             }
             if clamped_canva_sense.drag_stopped_by(PointerButton::Primary) {
-                ctx.app_state.is_dragging = false
+                ctx.app_state.is_dragging = false;
             }
 
             if  clamped_canva_sense.drag_started_by(PointerButton::Secondary) {
@@ -130,7 +130,6 @@ impl AppComponentExt for Canvas {
           
             if ctx.app_state.current_draw_tool.clone().is_some() && clamped_canva_sense.hovered(){
                 let pos = clamped_canva_sense.hover_pos().unwrap_or_default();
-
                 
                 cursor.settings.add_lock_event(ui);
                 cursor.set_radius(ctx.app_state.current_stroke_width * ctx.app_state.layers_container.transform.scale);
@@ -140,7 +139,6 @@ impl AppComponentExt for Canvas {
                 };
                
             }
-            
         });
     }
 }
