@@ -87,11 +87,15 @@ impl AppComponentExt for ToolBar {
                 }
             });
             ui.horizontal(|ui| {
-                let (container_response, container_painter) = ui.allocate_painter(Vec2::new(500., 25.), Sense::click());
+                let (container_response, container_painter) = ui.allocate_painter(Vec2::new(1000., 25.), Sense::click());
+                let starting_offset = Vec2::new(0., 0.0);
+              
+                
+
                 for (tool_idx, tool) in ctx.app_settings.draw_tools.tools.iter().enumerate() {
                     let button_rect = egui::Rect::from_min_max(
-                        Pos2::new((button_size.x + 2. * padding) * tool_idx as f32 + container_response.rect.min.x, padding + container_response.rect.min.y), 
-                        Pos2::new((button_size.x + 2. * padding) * tool_idx as f32 + button_size.x + container_response.rect.min.x, padding + button_size.y + container_response.rect.min.y)
+                        Pos2::new((button_size.x + 2. * padding) * tool_idx as f32 + container_response.rect.min.x + starting_offset.x, padding + container_response.rect.min.y + starting_offset.y), 
+                        Pos2::new((button_size.x + 2. * padding) * tool_idx as f32 + button_size.x + container_response.rect.min.x + starting_offset.x, padding + button_size.y + container_response.rect.min.y + starting_offset.y)
                     );
                     let mut text_color = Color32::BLACK;
                     if let Some(current_tool) = &ctx.app_state.current_draw_tool && current_tool.id == tool.id {
@@ -120,10 +124,11 @@ impl AppComponentExt for ToolBar {
             ui.add_space(10.);
             ui.horizontal(|ui| {
                 let stroke_width_slider_sense= ui.add(egui::Slider::new(&mut ctx.app_state.current_stroke_width, RangeInclusive::new(1., 50.)));
-                if stroke_width_slider_sense.changed() {
-                    ctx.app_settings.pencil_cursor.set_radius(ctx.app_state.current_stroke_width);
+                    if stroke_width_slider_sense.changed() {
+                        ctx.app_settings.pencil_cursor.set_radius(ctx.app_state.current_stroke_width);
+                    }
                 }
-            });
+            );
         });
         
     }
