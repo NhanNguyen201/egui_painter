@@ -2,7 +2,6 @@ pub mod components;
 
 
 use std::path::PathBuf;
-use std::vec;
 
 use egui::{Color32, ColorImage, Id, Pos2, Vec2};
 
@@ -35,7 +34,7 @@ pub struct App {
 
 #[derive(Clone, PartialEq)]
 pub struct AppSettings {
-    canvas_size: Vec2,
+    layer_size: Vec2,
     color_picker: ColorPicker,
     pencil_cursor: PencilCursor,
     draw_tools: Tools,
@@ -48,7 +47,7 @@ impl Default for AppSettings {
         
         
         Self {
-            canvas_size: Vec2::new(900.0, 650.0),
+            layer_size: Vec2::new(500.0, 500.0),
             color_picker: ColorPicker::default(),
             draw_tools: Tools::default(),
             pencil_cursor: PencilCursor::default(),
@@ -79,7 +78,7 @@ impl AppState {
             id: new_rand_id(), 
             name: "Layer 1".to_string(), 
             is_visible: true,
-            texture: LayerTexture::new(settings.canvas_size.x as usize, settings.canvas_size.y as usize)
+            texture: LayerTexture::new(settings.layer_size.x as usize, settings.layer_size.y as usize)
         };
         let mut palette: Vec<PaintColor> = Vec::new();
         let mut layers_container = LayersContainer::default();
@@ -117,14 +116,19 @@ impl eframe::App for App {
             ui.horizontal(|ui|{
                 ToolBar::add(self, ui);
             });
-            ui.horizontal(|ui| {
+            ui.add_space(10.);
+
+            ui.horizontal_top(|ui| {
                 ui.vertical(|ui| {
                     ColorPalette::add(self, ui); 
                     ColorPicker::add(self, ui);
                 });
-                ui.add_space(20.);
                 Canvas::add( self, ui);
                 LayersDisplayContainer::add(self, ui);
+            });
+            ui.add_space(10.);
+            ui.horizontal(|ui| {
+                ui.label(format!("Current scale: {:.02}", &self.app_state.layers_container.transform.scale.clone()));
             });
         });  
     }
@@ -156,7 +160,7 @@ impl App {
 
     pub fn re_new(&mut self) {
         let mut new_settings = AppSettings::default();
-        new_settings.canvas_size = Vec2::new(self.app_settings.new_paint_settings.width as f32, self.app_settings.new_paint_settings.height as f32);
+        new_settings.layer_size = Vec2::new(self.app_settings.new_paint_settings.width as f32, self.app_settings.new_paint_settings.height as f32);
         self.app_settings = new_settings.clone();
         self.app_state = AppState::from_settings(new_settings);
     
