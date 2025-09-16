@@ -28,7 +28,7 @@ impl AppComponentExt for LayersDisplayContainer {
                     ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                 }
                 if add_layer_sense.clicked_by(PointerButton::Primary) {
-                    let new_layer: Layer = Layer {id: new_rand_id(), name: format!("Layer {}", (ctx.app_state.layers_container.layers.len() + 1).to_string()), is_visible: true, texture: LayerTexture::new(ctx.app_settings.canvas_size.x as usize, ctx.app_settings.canvas_size.y as usize)};
+                    let new_layer: Layer = Layer {id: new_rand_id(), name: format!("Layer {}", (ctx.app_state.layers_container.layers.len() + 1).to_string()), is_visible: true, texture: LayerTexture::new(ctx.app_settings.layer_size.x as usize, ctx.app_settings.layer_size.y as usize)};
                     ctx.app_state.layers_container.layers.insert(0, new_layer.clone());
                     ctx.app_state.current_layer = Some(new_layer.id);
                 }

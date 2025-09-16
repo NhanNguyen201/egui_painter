@@ -117,12 +117,13 @@ impl AppComponentExt for ToolBar {
                 }
                 // ui.label("This is tool bar");
             });
+            ui.add_space(10.);
             ui.horizontal(|ui| {
                 let stroke_width_slider_sense= ui.add(egui::Slider::new(&mut ctx.app_state.current_stroke_width, RangeInclusive::new(1., 50.)));
                 if stroke_width_slider_sense.changed() {
                     ctx.app_settings.pencil_cursor.set_radius(ctx.app_state.current_stroke_width);
                 }
-            })
+            });
         });
         
     }

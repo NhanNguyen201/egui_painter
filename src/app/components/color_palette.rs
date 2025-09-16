@@ -10,7 +10,7 @@ pub struct ColorPalette;
 impl AppComponentExt for ColorPalette {
     type Context = App;
     fn add(ctx: &mut Self::Context, ui: &mut eframe::egui::Ui) {
-        let palette_size: Vec2 = Vec2::new(150., 350.);
+        let palette_size: Vec2 = Vec2::new(150., 390.);
         let padding: f32 = 2.5;
         let color_block_size: f32 = 20.;
         Frame::canvas(ui.style()).show(ui, |ui| {
