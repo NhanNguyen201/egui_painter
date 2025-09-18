@@ -88,9 +88,19 @@ impl AppComponentExt for ToolBar {
             });
             ui.horizontal(|ui| {
                 let (container_response, container_painter) = ui.allocate_painter(Vec2::new(1000., 25.), Sense::click());
-                let starting_offset = Vec2::new(0., 0.0);
-              
+                let starting_offset = Vec2::new(100., 0.0);
                 
+                let load_image_rect = egui::Rect::from_min_max(
+                    Pos2::new(container_response.rect.min.x + padding, container_response.rect.min.y + padding), 
+                    Pos2::new(container_response.rect.min.x + padding + 80., container_response.rect.min.y + padding + button_size.y)
+                );
+                container_painter.rect_filled(load_image_rect, 5., Color32::WHITE);
+                container_painter.text(load_image_rect.center(), Align2::CENTER_CENTER, "load image", FontId::new(12., FontFamily::Monospace), Color32::BLACK);
+
+                let load_sense = ui.allocate_rect(load_image_rect, Sense::click());
+                if load_sense.clicked() {
+                    ctx.load_image();
+                }
 
                 for (tool_idx, tool) in ctx.app_settings.draw_tools.tools.iter().enumerate() {
                     let button_rect = egui::Rect::from_min_max(

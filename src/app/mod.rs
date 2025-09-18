@@ -7,6 +7,7 @@ use egui::{Color32, ColorImage, Id, Pos2, Vec2};
 
 
 use components::{AppComponentExt, canvas::Canvas};
+use image::imageops::FilterType;
 use image::{ImageBuffer};
 use rfd::FileDialog;
 
@@ -194,6 +195,56 @@ impl App {
             buffer.put_pixel(x, y, image::Rgba::from(rgba));
         }
         buffer.save(path).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
+    }
+    pub fn load_image(&mut self) {
+        let file_path: Option<PathBuf> = FileDialog::new()
+            .add_filter("Image", &["png", "jpeg", "jpg"])
+            .pick_file();
+        match file_path {
+            Some(path) => {
+                let reader = image::ImageReader::open(path.clone()).unwrap();
+                if let Ok(image) = reader.decode()  {
+                    let image_size = Vec2::new(image.width() as f32, image.height() as f32);
+                    let image_ratio = image_size.x / image_size.y;
+                    let canvas_ratio = self.app_settings.layer_size.x / self.app_settings.layer_size.y;
+                    let scaled_size = if image_ratio > canvas_ratio {
+                        Vec2::new(self.app_settings.layer_size.x.clone(), self.app_settings.layer_size.x.clone() / image_ratio)
+                    } else {
+                        Vec2::new(self.app_settings.layer_size.y.clone() * image_ratio, self.app_settings.layer_size.y.clone() )
+                    };
+                    let scaled_image = image.resize(scaled_size.x as u32, scaled_size.y as u32, FilterType::Nearest);
+                    let color_image = ColorImage::from_rgba_unmultiplied(
+                        [scaled_image.width() as _, scaled_image.height() as _],
+                        scaled_image.to_rgba8().as_flat_samples().as_slice(),
+                    );
+                    let offset = (self.app_settings.layer_size - scaled_size) / 2.0;
+                    let mut new_image_layer = Layer {
+                        id: new_rand_id(), 
+                        name: "Image layer".to_string(), 
+                        is_visible: true,
+                        texture: LayerTexture::new(self.app_settings.layer_size.x as usize, self.app_settings.layer_size.y as usize)
+                    };
+                    for px in 0..scaled_image.width() {
+                        for py in 0..scaled_image.height() {
+                                new_image_layer.texture.image_data.pixels[((py as f32 + offset.y).floor() as usize * self.app_settings.layer_size.x  as usize + (px as f32 + offset.x).floor() as usize) as usize] = color_image.pixels[(py * scaled_image.width() + px) as usize];
+                        
+                        }
+                    }
+                    if let Some(active_layer) = self.app_state.current_layer  {
+                        if let Some(find_index) = self.app_state.layers_container.layers.iter().position(|l| l.id == active_layer) {
+                            if find_index == 0 {
+                                self.app_state.layers_container.layers.insert(0, new_image_layer);
+                            } else {
+                                self.app_state.layers_container.layers.insert(find_index - 1, new_image_layer);
+
+                            }
+                        }
+                        
+                    }
+                }
+            },
+            None => {}
+        }
     }
 }
 
