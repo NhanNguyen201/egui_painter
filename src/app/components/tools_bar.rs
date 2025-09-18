@@ -97,8 +97,11 @@ impl AppComponentExt for ToolBar {
                 container_painter.rect_filled(load_image_rect, 5., Color32::WHITE);
                 container_painter.text(load_image_rect.center(), Align2::CENTER_CENTER, "load image", FontId::new(12., FontFamily::Monospace), Color32::BLACK);
 
-                let load_sense = ui.allocate_rect(load_image_rect, Sense::click());
-                if load_sense.clicked() {
+                let load_image_sense = ui.allocate_rect(load_image_rect, Sense::click());
+                if load_image_sense.hovered() {
+                    ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
+                }
+                if load_image_sense.clicked() {
                     ctx.load_image();
                 }
 
