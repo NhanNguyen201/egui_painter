@@ -226,12 +226,13 @@ impl App {
                     };
                     for px in 0..scaled_image.width() {
                         for py in 0..scaled_image.height() {
-                                new_image_layer.texture.image_data.pixels[((py as f32 + offset.y).floor() as usize * self.app_settings.layer_size.x  as usize + (px as f32 + offset.x).floor() as usize) as usize] = color_image.pixels[(py * scaled_image.width() + px) as usize];
+                            new_image_layer.texture.image_data.pixels[((py as f32 + offset.y).floor() as usize * self.app_settings.layer_size.x  as usize + (px as f32 + offset.x).floor() as usize) as usize] = color_image.pixels[(py * scaled_image.width() + px) as usize];
                         
                         }
                     }
                     if let Some(active_layer) = self.app_state.current_layer  {
                         if let Some(find_index) = self.app_state.layers_container.layers.iter().position(|l| l.id == active_layer) {
+                            self.app_state.current_layer = Some(new_image_layer.id.clone());
                             if find_index == 0 {
                                 self.app_state.layers_container.layers.insert(0, new_image_layer);
                             } else {
