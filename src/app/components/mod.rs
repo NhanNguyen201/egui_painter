@@ -4,6 +4,7 @@ pub mod utils;
 pub mod layers_display_container;
 pub mod tools_bar;
 pub mod color_picker;
+pub mod widgets;
 
 pub trait AppComponentExt {
     type Context;

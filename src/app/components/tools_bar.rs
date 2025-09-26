@@ -102,7 +102,8 @@ impl AppComponentExt for ToolBar {
                     ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
                 }
                 if load_image_sense.clicked() {
-                    ctx.load_image();
+                    ctx.load_image(ui.ctx());
+                    // ctx.app_settings.import_image_widget.open();
                 }
 
                 for (tool_idx, tool) in ctx.app_settings.draw_tools.tools.iter().enumerate() {

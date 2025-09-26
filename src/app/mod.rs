@@ -3,17 +3,17 @@ pub mod components;
 
 use std::path::PathBuf;
 
-use egui::{Color32, ColorImage, Id, Pos2, Vec2};
+use egui::{Color32, ColorImage, Id, Pos2, TextureOptions, Vec2};
 
 
 use components::{AppComponentExt, canvas::Canvas};
-use image::imageops::FilterType;
 use image::{ImageBuffer};
 use rfd::FileDialog;
 
 use crate::app::components::utils::create_paint::NewPaintSetting;
 use crate::app::components::utils::image_color::composite_layers;
 use crate::app::components::utils::layer::LayersContainer;
+use crate::app::components::widgets::import_image_widget::{ImportImageWidget, Texture};
 use crate::app::components::{
     color_palette::ColorPalette,
     color_picker::ColorPicker,
@@ -36,11 +36,13 @@ pub struct App {
 #[derive(Clone, PartialEq)]
 pub struct AppSettings {
     layer_size: Vec2,
+    layer_rect: egui::Rect,
     color_picker: ColorPicker,
     pencil_cursor: PencilCursor,
     draw_tools: Tools,
     base_dir: Option<PathBuf>,
-    new_paint_settings: NewPaintSetting
+    new_paint_settings: NewPaintSetting,
+    import_image_widget: ImportImageWidget
 }
 
 impl Default for AppSettings {
@@ -49,11 +51,13 @@ impl Default for AppSettings {
         
         Self {
             layer_size: Vec2::new(500.0, 500.0),
+            layer_rect: egui::Rect::from_center_size(Pos2::ZERO, Vec2::new(500., 500.)),
             color_picker: ColorPicker::default(),
             draw_tools: Tools::default(),
             pencil_cursor: PencilCursor::default(),
             new_paint_settings: NewPaintSetting::default(),
-            base_dir: None
+            base_dir: None,
+            import_image_widget: ImportImageWidget::default()
         }
     }
 }
@@ -131,6 +135,9 @@ impl eframe::App for App {
             ui.horizontal(|ui| {
                 ui.label(format!("Current scale: {:.02}", &self.app_state.layers_container.transform.scale.clone()));
             });
+            if self.app_settings.import_image_widget.is_open {
+                ImportImageWidget::add(self, ui);
+            }
         });  
     }
 }
@@ -196,7 +203,7 @@ impl App {
         }
         buffer.save(path).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))
     }
-    pub fn load_image(&mut self) {
+    pub fn load_image(&mut self, ctx: &egui::Context) {
         let file_path: Option<PathBuf> = FileDialog::new()
             .add_filter("Image", &["png", "jpeg", "jpg"])
             .pick_file();
@@ -204,44 +211,33 @@ impl App {
             Some(path) => {
                 let reader = image::ImageReader::open(path.clone()).unwrap();
                 if let Ok(image) = reader.decode()  {
-                    let image_size = Vec2::new(image.width() as f32, image.height() as f32);
-                    let image_ratio = image_size.x / image_size.y;
-                    let canvas_ratio = self.app_settings.layer_size.x / self.app_settings.layer_size.y;
-                    let scaled_size = if image_ratio > canvas_ratio {
-                        Vec2::new(self.app_settings.layer_size.x.clone(), self.app_settings.layer_size.x.clone() / image_ratio)
-                    } else {
-                        Vec2::new(self.app_settings.layer_size.y.clone() * image_ratio, self.app_settings.layer_size.y.clone() )
-                    };
-                    let scaled_image = image.resize(scaled_size.x as u32, scaled_size.y as u32, FilterType::Nearest);
+                    let max_original_size = 500.;
                     let color_image = ColorImage::from_rgba_unmultiplied(
-                        [scaled_image.width() as _, scaled_image.height() as _],
-                        scaled_image.to_rgba8().as_flat_samples().as_slice(),
+                        [image.width() as _, image.height() as _],
+                        image.to_rgba8().as_flat_samples().as_slice(),
                     );
-                    let offset = (self.app_settings.layer_size - scaled_size) / 2.0;
-                    let mut new_image_layer = Layer {
-                        id: new_rand_id(), 
-                        name: "Image layer".to_string(), 
-                        is_visible: true,
-                        texture: LayerTexture::new(self.app_settings.layer_size.x as usize, self.app_settings.layer_size.y as usize)
+                    let texture_handled =  ctx.load_texture(
+                        "imported_image",
+                        color_image.clone(),
+                        TextureOptions::default(),
+                    );
+                    let new_texture = Texture {
+                        dyn_image: image.clone(),
+                        texture_handle: texture_handled
                     };
-                    for px in 0..scaled_image.width() {
-                        for py in 0..scaled_image.height() {
-                            new_image_layer.texture.image_data.pixels[((py as f32 + offset.y).floor() as usize * self.app_settings.layer_size.x  as usize + (px as f32 + offset.x).floor() as usize) as usize] = color_image.pixels[(py * scaled_image.width() + px) as usize];
-                        
-                        }
-                    }
-                    if let Some(active_layer) = self.app_state.current_layer  {
-                        if let Some(find_index) = self.app_state.layers_container.layers.iter().position(|l| l.id == active_layer) {
-                            self.app_state.current_layer = Some(new_image_layer.id.clone());
-                            if find_index == 0 {
-                                self.app_state.layers_container.layers.insert(0, new_image_layer);
-                            } else {
-                                self.app_state.layers_container.layers.insert(find_index - 1, new_image_layer);
-
-                            }
-                        }
-                        
-                    }
+                    let original_scale = if image.width() > image.height() {
+                        max_original_size / image.width() as f32
+                    } else {
+                        max_original_size / image.height() as f32
+                    };
+                    self.app_settings.import_image_widget = ImportImageWidget {
+                        is_open: true,
+                        texture: Some(new_texture),
+                        original_scale,
+                        scale_factor: self.app_settings.layer_size.x.max(self.app_settings.layer_size.y) / max_original_size,
+                        ..Default::default()
+                    };
+                    
                 }
             },
             None => {}
@@ -250,23 +246,3 @@ impl App {
 }
 
 
-// fn blend_pixel(bottom: egui::Color32, top: egui::Color32) -> egui::Color32 {
-//     let top_a = top.a() as f32 / 255.0;
-//     let inv_a = 1.0 - top_a;
-
-//     let r = (top.r() as f32 * top_a + bottom.r() as f32 * inv_a) as u8;
-//     let g = (top.g() as f32 * top_a + bottom.g() as f32 * inv_a) as u8;
-//     let b = (top.b() as f32 * top_a + bottom.b() as f32 * inv_a) as u8;
-
-    
-//     let a = (top.a() as f32 + bottom.a() as f32 * inv_a) as u8;
-
-//     egui::Color32::from_rgba_premultiplied(r, g, b, a)
-// }
-
-// ef get_color(colorRGBA1, colorRGBA2):
-//     alpha = 255 - ((255 - colorRGBA1[3]) * (255 - colorRGBA2[3]) / 255)      1. - (1. - top.a)(1. - bottom.a)
-//     red   = (colorRGBA1[0] * (255 - colorRGBA2[3]) + colorRGBA2[0] * colorRGBA2[3]) / 255   r = top.r * (1. - bottom.r) - bottom.r * bottom.a
-//     green = (colorRGBA1[1] * (255 - colorRGBA2[3]) + colorRGBA2[1] * colorRGBA2[3]) / 255   b = top.r * (1. - bottom.r) - bottom.r * bottom.a
-//     blue  = (colorRGBA1[2] * (255 - colorRGBA2[3]) + colorRGBA2[2] * colorRGBA2[3]) / 255
-//     return (int(red), int(green), int(blue), int(alpha))

@@ -31,7 +31,8 @@ impl AppComponentExt for Canvas {
                             canva_container_response.rect.min + Vec2::new(background_block_size * background_col_block as f32 + background_block_size, background_block_size * background_row_block as f32 + background_block_size)
                         ), 
                         0.0, 
-                        color);
+                        color
+                    );
                 }
             }; 
 
@@ -57,7 +58,7 @@ impl AppComponentExt for Canvas {
             );
             // canvas_container_painter.
             let clamped_canva_sense = ui.allocate_rect(clamped_canvas_rect, Sense::click_and_drag());
-            canvas_container_painter.rect_filled(clamped_canvas_rect,0.0, Color32::from_rgb(250, 250, 250));
+            canvas_container_painter.rect_filled(clamped_canvas_rect,0.0, Color32::from_rgb(200, 200, 200));
             
             if  clamped_canva_sense.drag_started_by(PointerButton::Primary) {
                 ctx.app_state.is_dragging = true;
@@ -103,7 +104,7 @@ impl AppComponentExt for Canvas {
             }
 
            
-            if ui.input(|i| i.events.len() > 0) {
+            if ui.input(|i| i.events.len() > 0) && (canva_container_response.hovered() || clamped_canva_sense.hovered()) {
                
                 let events = ui.input(|i| i.events.clone());
                 for event in events.iter() {
