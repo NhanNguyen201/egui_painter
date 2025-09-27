@@ -186,7 +186,9 @@ impl App {
         let path = if let Some(base_dir) = &self.app_settings.base_dir {
             base_dir.join("final_output.png")
         } else {
-            PathBuf::from(r"C:\")
+            let c_drive = PathBuf::from(r"C:\");
+            c_drive.join("final_output.png")
+            
         };
         // let path = base_dir.join("final_output.png");
         let color_vec = &self.app_state.layers_container.layers.clone().iter().rev().map(|layer| layer.texture.image_data.clone()).collect::<Vec<ColorImage>>();
@@ -225,16 +227,13 @@ impl App {
                         dyn_image: image.clone(),
                         texture_handle: texture_handled
                     };
-                    let original_scale = if image.width() > image.height() {
-                        max_original_size / image.width() as f32
-                    } else {
-                        max_original_size / image.height() as f32
-                    };
+                    let original_scale = max_original_size / ((image.width() as f32 ).max(image.height() as f32));
+                    let scale_factor = (self.app_settings.layer_size.x.clone().max(self.app_settings.layer_size.y.clone())) / max_original_size;
                     self.app_settings.import_image_widget = ImportImageWidget {
                         is_open: true,
                         texture: Some(new_texture),
                         original_scale,
-                        scale_factor: self.app_settings.layer_size.x.max(self.app_settings.layer_size.y) / max_original_size,
+                        scale_factor,
                         ..Default::default()
                     };
                     

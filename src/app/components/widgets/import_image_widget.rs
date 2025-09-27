@@ -63,8 +63,7 @@ pub struct ImportImageWidget {
     pub drag_modifier: DragModifier,
     pub draw_rect: Option<egui::Rect>,
     pub background_layer_rect: Option<egui::Rect>,
-    pub offset_to_layer: Vec2,
-    pub offset_to_image: Vec2,
+    pub texture_rect: Option<egui::Rect>,
     pub scale_factor: f32
 }
 
@@ -79,8 +78,7 @@ impl Default for ImportImageWidget {
             drag_modifier: DragModifier::default(),
             draw_rect: None,
             background_layer_rect: None,
-            offset_to_layer: Vec2::ZERO,
-            offset_to_image: Vec2::ZERO,
+            texture_rect: None,
             scale_factor: 1.0
         }
     }
@@ -144,6 +142,7 @@ impl AppComponentExt for ImportImageWidget {
                                 ((texture_rect.max.y - (unclamped_rect.min.y)) / scaled_image_size.y).min(1.0)
                             )
                         );
+                        widget.texture_rect = Some(texture_rect.clone());
                         let image_drag_sense = ui.allocate_rect(texture_rect, Sense::click_and_drag());
                         if image_drag_sense.hovered() {
                             ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
@@ -170,8 +169,8 @@ impl AppComponentExt for ImportImageWidget {
                             Vec2::new(max_size * layer_ratio, max_size)
                         };
                         let background_layer_rect = egui::Rect::from_center_size(container_sense.rect.center(), scaled_layer_size);
-                        container_painter.rect(background_layer_rect, 0., Color32::from_rgba_unmultiplied(100, 100, 100, 65), Stroke::new(1., Color32::from_rgb(200, 200, 200)), StrokeKind::Middle);
                         widget.background_layer_rect = Some(background_layer_rect.clone());
+                        container_painter.rect(background_layer_rect, 0., Color32::from_rgba_unmultiplied(100, 100, 100, 65), Stroke::new(1., Color32::from_rgb(200, 200, 200)), StrokeKind::Middle);
                         // Crop display 
                         let crop_rect = egui::Rect::from_min_max(
                             Pos2::new(background_layer_rect.min.x + crop.left, background_layer_rect.min.y + crop.top), 
@@ -219,10 +218,7 @@ impl AppComponentExt for ImportImageWidget {
                             drag_modifier.is_dragging = false;
                         }
                         if let Some(draw_rect) = crop_rect.fit_in(texture_rect).or(texture_rect.fit_in(crop_rect)) {
-                            ui.ctx().request_repaint();
                             container_painter.rect(draw_rect, 0.0, Color32::from_rgba_unmultiplied(255, 255, 255, 125), Stroke::new(2., Color32::from_rgb(255, 0, 255)), StrokeKind::Middle);
-                            widget.offset_to_layer = draw_rect.min.clone().to_vec2() - background_layer_rect.min.clone().to_vec2();
-                            widget.offset_to_image = draw_rect.min.clone().to_vec2() - texture_rect.min.clone().to_vec2();
                             widget.draw_rect = Some(draw_rect);
                             // container_painter.rect_stroke(draw_rect, 0., Stroke::new(2., Color32::from_rgba_unmultiplied(225, 0, 0, 125)), StrokeKind::Middle);
                         }
@@ -257,14 +253,14 @@ impl AppComponentExt for ImportImageWidget {
 
                                   
                                     let offset_to_layer = (draw_rect.clone().min.to_vec2() - widget.background_layer_rect.unwrap().clone().min.to_vec2()) * scale_factor.clone();
-                                    let scaled_raw_rect_size = draw_rect.clone().size() * scale_factor.clone();
+                                    let scaled_raw_rect_size = draw_rect.size().clone() * scale_factor.clone();
 
-                                    let image_scale = *original_scale * transform.scale.clone();
-                                    let offset_to_image =  widget.offset_to_image.clone() * scale_factor.clone();
-                                    
+                                    let image_scale = original_scale.clone() * transform.scale.clone();
+                                    let offset_to_image =  (draw_rect.clone().min.to_vec2() - widget.texture_rect.unwrap().clone().min.to_vec2()) * scale_factor.clone();
+                                    // offset_to_image.x = offset_to_image.x / image_scale.clone();
                                     let scaled_dyn_image = cloned_texture.dyn_image.resize(
-                                        (scale_factor * image_scale * cloned_texture.texture_handle.size()[0] as f32).floor() as u32,
-                                        (scale_factor * image_scale * cloned_texture.texture_handle.size()[1] as f32).floor() as u32, 
+                                        (scale_factor.clone() * image_scale.clone() * cloned_texture.texture_handle.size()[0] as f32).ceil() as u32,
+                                        (scale_factor.clone() * image_scale.clone() * cloned_texture.texture_handle.size()[1] as f32).ceil() as u32, 
                                         FilterType::Nearest
                                     );
                                     let scaled_color_image = ColorImage::from_rgba_unmultiplied(
@@ -276,12 +272,14 @@ impl AppComponentExt for ImportImageWidget {
                                             let offset = offset_to_layer.clone();
                                             let x_cord = p_x as f32 + offset.clone().x;
                                             let y_cord = p_y as f32 + offset.clone().y;
+                                            let img_x_cord = p_x as f32 + offset_to_image.clone().x;
+                                            let img_y_cord = p_y as f32 + offset_to_image.clone().y;
                                             // if x_cord < 0. || y_cord < 0. || x_cord >= new_image_layer.texture.layer_size.x || y_cord >= new_image_layer.texture.layer_size.y {
                                             //     continue;
                                             // }
                                             // println!("point: x: {:#}, y: {:#}", x_cord, y_cord);
-                                            let point_position = (y_cord * new_image_layer.texture.layer_size.x).floor() as usize + x_cord.floor() as usize;
-                                            let image_point_position = ((p_y as f32  + offset_to_image.clone().y).floor()  * scaled_color_image.size[0] as f32).floor() as usize + (p_x as f32 + offset_to_image.clone().x).floor() as usize; 
+                                            let point_position = (y_cord * new_image_layer.texture.layer_size.clone().x).floor() as usize + x_cord.floor() as usize;
+                                            let image_point_position = (img_y_cord  * scaled_color_image.size[0] as f32).floor() as usize + img_x_cord.floor() as usize; 
                                             new_image_layer.texture.image_data.pixels[point_position] = scaled_color_image.pixels[image_point_position];
                                             
                                            
@@ -304,12 +302,12 @@ impl AppComponentExt for ImportImageWidget {
                                     }
                                 }
                                 widget.is_open = false;
-                                // *texture = None;
-                                // widget.draw_rect = None;
-                                // *transform = Transform::default();
-                                // *crop = CropRect::default();
-                                // *drag_modifier = DragModifier::default();
-                                // *original_scale = 1.;
+                                *texture = None;
+                                widget.draw_rect = None;
+                                *transform = Transform::default();
+                                *crop = CropRect::default();
+                                *drag_modifier = DragModifier::default();
+                                *original_scale = 1.;
 
                             }
                         });
