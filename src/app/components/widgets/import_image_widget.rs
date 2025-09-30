@@ -103,6 +103,9 @@ impl AppComponentExt for ImportImageWidget {
         let max_size = 500.;
         let widget = &mut ctx.app_settings.import_image_widget ;
         let texture = &mut widget.texture;
+        let widget_texture_rect = &mut widget.texture_rect;
+        let widget_background_rect = &mut widget.background_layer_rect;
+        let widget_draw_rect = &mut widget.draw_rect;
         let cloned_texture = texture.clone().unwrap();
         let container_size = Vec2::new(1000., 800.);
         let original_scale = &mut widget.original_scale;
@@ -118,11 +121,11 @@ impl AppComponentExt for ImportImageWidget {
                         let (container_sense, container_painter) =  ui.allocate_painter(container_size, Sense::click());
                         
                         let scaled_image_size = Vec2::new(
-                            cloned_texture.dyn_image.width() as f32 * *original_scale * transform.scale,
-                            cloned_texture.dyn_image.height() as f32 * *original_scale * transform.scale,
+                            cloned_texture.dyn_image.width() as f32 * original_scale.clone() * transform.scale.clone(),
+                            cloned_texture.dyn_image.height() as f32 * original_scale.clone() * transform.scale.clone(),
                         );
                         let unclamped_rect = egui::Rect::from_center_size(
-                            container_sense.rect.center() + transform.position.to_vec2(), 
+                            container_sense.rect.center() + transform.position.clone().to_vec2(), 
                             scaled_image_size
                         );
                         let texture_rect = egui::Rect {
@@ -145,7 +148,7 @@ impl AppComponentExt for ImportImageWidget {
                                 ((texture_rect.max.y - (unclamped_rect.min.y)) / scaled_image_size.y).min(1.0)
                             )
                         );
-                        widget.texture_rect = Some(texture_rect.clone());
+                        *widget_texture_rect = Some(texture_rect.clone());
                         let image_drag_sense = ui.allocate_rect(texture_rect, Sense::click_and_drag());
                         if image_drag_sense.hovered() {
                             ui.ctx().set_cursor_icon(CursorIcon::PointingHand);
@@ -172,7 +175,7 @@ impl AppComponentExt for ImportImageWidget {
                             Vec2::new(max_size * layer_ratio, max_size)
                         };
                         let background_layer_rect = egui::Rect::from_center_size(container_sense.rect.center(), scaled_layer_size);
-                        widget.background_layer_rect = Some(background_layer_rect.clone());
+                        *widget_background_rect = Some(background_layer_rect.clone());
                         container_painter.rect(background_layer_rect, 0., Color32::from_rgba_unmultiplied(100, 100, 100, 65), Stroke::new(1., Color32::from_rgb(200, 200, 200)), StrokeKind::Middle);
                         // Crop display 
                         let crop_rect = egui::Rect::from_min_max(
@@ -222,7 +225,7 @@ impl AppComponentExt for ImportImageWidget {
                         }
                         if let Some(draw_rect) = crop_rect.fit_in(texture_rect.clone()).or(texture_rect.fit_in(crop_rect.clone())) {
                             container_painter.rect(draw_rect, 0.0, Color32::from_rgba_unmultiplied(255, 255, 255, 125), Stroke::new(2., Color32::from_rgb(255, 0, 255)), StrokeKind::Middle);
-                            widget.draw_rect = Some(draw_rect);
+                            *widget_draw_rect = Some(draw_rect);
                             // container_painter.rect_stroke(draw_rect, 0., Stroke::new(2., Color32::from_rgba_unmultiplied(225, 0, 0, 125)), StrokeKind::Middle);
                         }
                     });
@@ -235,7 +238,7 @@ impl AppComponentExt for ImportImageWidget {
                             if cancel_button.clicked() {
                                widget.is_open = false;
                                *texture = None;
-                               widget.draw_rect = None;
+                               *widget_draw_rect = None;
                                *transform = Transform::default();
                                *crop = CropRect::default();
                                *drag_modifier = DragModifier::default();
@@ -245,10 +248,10 @@ impl AppComponentExt for ImportImageWidget {
                             }
                             let confirm_button = ui.button("Confirm");
                             if confirm_button.clicked() {
-                                if widget.draw_rect.clone().is_some() {
+                                if widget_draw_rect.is_some() {
                                     let scale_factor = &widget.scale_factor.clone();
-                                    let background_rect = &widget.background_layer_rect.unwrap().clone();
-                                    let texture_rect = &widget.texture_rect.unwrap().clone();
+                                    let background_rect = &widget_background_rect.clone().unwrap();
+                                    let texture_rect = &widget_texture_rect.clone().unwrap();
                                     let layer_size = &ctx.app_settings.layer_size.clone();
                                     
                                     let crop_rect = egui::Rect::from_min_max(
@@ -264,9 +267,11 @@ impl AppComponentExt for ImportImageWidget {
                                     };
 
                                   
+                                    let image_scale = original_scale.clone() * transform.clone().scale;
+
                                     let offset_to_layer = (draw_rect.clone().min.to_vec2() - background_rect.clone().min.to_vec2()) * scale_factor.clone();
-                                    let image_scale = original_scale.clone() * transform.scale.clone();
                                     let offset_to_image =  (draw_rect.clone().min.to_vec2() - texture_rect.clone().min.to_vec2()) * scale_factor.clone();
+                                    
                                     let scale_image_size = Vec2::new(
                                         scale_factor.clone() * image_scale.clone() * cloned_texture.texture_handle.size()[0] as f32,
                                         scale_factor.clone() * image_scale.clone() * cloned_texture.texture_handle.size()[1] as f32
@@ -280,7 +285,7 @@ impl AppComponentExt for ImportImageWidget {
                                         [scaled_dyn_image.width() as _, scaled_dyn_image.height() as _],
                                         scaled_dyn_image.to_rgba8().as_flat_samples().as_slice(),
                                     );
-                                    let scaled_raw_rect_size = draw_rect.clone().size() * scale_factor.clone();
+                                    let scaled_raw_rect_size = draw_rect.size() * scale_factor.clone();
                                     for p_x in 0..scaled_raw_rect_size.clone().x.floor() as u32 {
                                         for p_y in 0..scaled_raw_rect_size.clone().y.floor() as u32 {
                                             // let offset = offset_to_layer.clone();
@@ -293,7 +298,7 @@ impl AppComponentExt for ImportImageWidget {
                                             // }
                                             // println!("point: x: {:#}, y: {:#}", x_cord, y_cord);
                                             let point_position = (y_cord * new_image_layer.texture.layer_size.clone().x).floor() as usize + x_cord.floor() as usize;
-                                            let image_point_position = (img_y_cord  * scaled_color_image.size[0] as f32).floor() as usize + img_x_cord.floor() as usize; 
+                                            let image_point_position = (img_y_cord  * scaled_color_image.size[0].clone() as f32).floor() as usize + img_x_cord.floor() as usize; 
                                             new_image_layer.texture.image_data.pixels[point_position] = scaled_color_image.pixels[image_point_position];
                                             
                                            
@@ -317,7 +322,7 @@ impl AppComponentExt for ImportImageWidget {
                                 }
                                 widget.is_open = false;
                                 *texture = None;
-                                widget.draw_rect = None;
+                                *widget_draw_rect = None;
                                 *transform = Transform::default();
                                 *crop = CropRect::default();
                                 *drag_modifier = DragModifier::default();
