@@ -49,7 +49,10 @@ impl FitIn for egui::Rect {
         if self.min.x < target.min.x && self.min.y < target.min.y && self.max.x > target.max.x && self.max.y > target.max.y {
             None
         } else {
-            Some(self.intersect(target))
+            Some(egui::Rect::from_min_max(
+                Pos2 { x: self.min.x.max(target.min.x), y: self.min.y.max(target.min.y) },
+                Pos2 { x: self.max.x.min(target.max.x), y: self.max.y.min(target.max.y) }
+            ))
         }
     }
 }
@@ -100,17 +103,17 @@ impl AppComponentExt for ImportImageWidget {
         let max_size = 500.;
         let widget = &mut ctx.app_settings.import_image_widget ;
         let texture = &mut widget.texture;
+        let cloned_texture = texture.clone().unwrap();
+        let container_size = Vec2::new(1000., 800.);
         let original_scale = &mut widget.original_scale;
         let transform = &mut widget.transform;
         let crop = &mut widget.crop;
         let drag_modifier = &mut widget.drag_modifier;
-        let cloned_texture = texture.clone().unwrap();
-        let container_size = Vec2::new(1000., 800.);
         Window::new("Import image")
-            .title_bar(false)
-            .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
-            .show(ui.ctx(), |ui| {
-                ui.horizontal(|ui| {
+        .title_bar(false)
+        .anchor(Align2::CENTER_CENTER, Vec2::ZERO)
+        .show(ui.ctx(), |ui| {
+            ui.horizontal(|ui| {
                     Frame::canvas(ui.style()).outer_margin(0.).show(ui, |ui| { 
                         let (container_sense, container_painter) =  ui.allocate_painter(container_size, Sense::click());
                         
@@ -217,7 +220,7 @@ impl AppComponentExt for ImportImageWidget {
                         if bottom_right_sense.drag_stopped() {
                             drag_modifier.is_dragging = false;
                         }
-                        if let Some(draw_rect) = crop_rect.fit_in(texture_rect).or(texture_rect.fit_in(crop_rect)) {
+                        if let Some(draw_rect) = crop_rect.fit_in(texture_rect.clone()).or(texture_rect.fit_in(crop_rect.clone())) {
                             container_painter.rect(draw_rect, 0.0, Color32::from_rgba_unmultiplied(255, 255, 255, 125), Stroke::new(2., Color32::from_rgb(255, 0, 255)), StrokeKind::Middle);
                             widget.draw_rect = Some(draw_rect);
                             // container_painter.rect_stroke(draw_rect, 0., Stroke::new(2., Color32::from_rgba_unmultiplied(225, 0, 0, 125)), StrokeKind::Middle);
@@ -242,36 +245,47 @@ impl AppComponentExt for ImportImageWidget {
                             }
                             let confirm_button = ui.button("Confirm");
                             if confirm_button.clicked() {
-                                if let Some(draw_rect) = widget.draw_rect.clone()  {
-                                    let scale_factor = widget.scale_factor.clone();
+                                if widget.draw_rect.clone().is_some() {
+                                    let scale_factor = &widget.scale_factor.clone();
+                                    let background_rect = &widget.background_layer_rect.unwrap().clone();
+                                    let texture_rect = &widget.texture_rect.unwrap().clone();
+                                    let layer_size = &ctx.app_settings.layer_size.clone();
+                                    
+                                    let crop_rect = egui::Rect::from_min_max(
+                                        Pos2::new(background_rect.clone().min.x + crop.clone().left, background_rect.clone().min.y + crop.clone().top), 
+                                        Pos2::new(background_rect.clone().max.x + crop.clone().right, background_rect.clone().max.y + crop.clone().bottom)
+                                    );
+                                    let draw_rect = texture_rect.clone().fit_in(crop_rect.clone()).or(crop_rect.clone().fit_in(texture_rect.clone())).unwrap();
                                     let mut new_image_layer: Layer = Layer {
                                         id: new_rand_id(), 
                                         name: "Image layer".to_string(), 
                                         is_visible: true,
-                                        texture: LayerTexture::new(ctx.app_settings.layer_size.x.floor() as usize, ctx.app_settings.layer_size.y.floor() as usize)
+                                        texture: LayerTexture::new(layer_size.clone().x.floor() as usize, layer_size.clone().y.floor() as usize)
                                     };
 
                                   
-                                    let offset_to_layer = (draw_rect.clone().min.to_vec2() - widget.background_layer_rect.unwrap().clone().min.to_vec2()) * scale_factor.clone();
-                                    let scaled_raw_rect_size = draw_rect.size().clone() * scale_factor.clone();
-
+                                    let offset_to_layer = (draw_rect.clone().min.to_vec2() - background_rect.clone().min.to_vec2()) * scale_factor.clone();
                                     let image_scale = original_scale.clone() * transform.scale.clone();
-                                    let offset_to_image =  (draw_rect.clone().min.to_vec2() - widget.texture_rect.unwrap().clone().min.to_vec2()) * scale_factor.clone();
-                                    // offset_to_image.x = offset_to_image.x / image_scale.clone();
+                                    let offset_to_image =  (draw_rect.clone().min.to_vec2() - texture_rect.clone().min.to_vec2()) * scale_factor.clone();
+                                    let scale_image_size = Vec2::new(
+                                        scale_factor.clone() * image_scale.clone() * cloned_texture.texture_handle.size()[0] as f32,
+                                        scale_factor.clone() * image_scale.clone() * cloned_texture.texture_handle.size()[1] as f32
+                                    );
                                     let scaled_dyn_image = cloned_texture.dyn_image.resize(
-                                        (scale_factor.clone() * image_scale.clone() * cloned_texture.texture_handle.size()[0] as f32).ceil() as u32,
-                                        (scale_factor.clone() * image_scale.clone() * cloned_texture.texture_handle.size()[1] as f32).ceil() as u32, 
+                                        scale_image_size.clone().x.ceil() as u32,
+                                        scale_image_size.clone().y.ceil() as u32, 
                                         FilterType::Nearest
                                     );
                                     let scaled_color_image = ColorImage::from_rgba_unmultiplied(
                                         [scaled_dyn_image.width() as _, scaled_dyn_image.height() as _],
                                         scaled_dyn_image.to_rgba8().as_flat_samples().as_slice(),
                                     );
+                                    let scaled_raw_rect_size = draw_rect.clone().size() * scale_factor.clone();
                                     for p_x in 0..scaled_raw_rect_size.clone().x.floor() as u32 {
                                         for p_y in 0..scaled_raw_rect_size.clone().y.floor() as u32 {
-                                            let offset = offset_to_layer.clone();
-                                            let x_cord = p_x as f32 + offset.clone().x;
-                                            let y_cord = p_y as f32 + offset.clone().y;
+                                            // let offset = offset_to_layer.clone();
+                                            let x_cord = p_x as f32 + offset_to_layer.clone().x;
+                                            let y_cord = p_y as f32 + offset_to_layer.clone().y;
                                             let img_x_cord = p_x as f32 + offset_to_image.clone().x;
                                             let img_y_cord = p_y as f32 + offset_to_image.clone().y;
                                             // if x_cord < 0. || y_cord < 0. || x_cord >= new_image_layer.texture.layer_size.x || y_cord >= new_image_layer.texture.layer_size.y {

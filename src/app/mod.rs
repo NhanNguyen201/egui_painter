@@ -228,7 +228,7 @@ impl App {
                         texture_handle: texture_handled
                     };
                     let original_scale = max_original_size / ((image.width() as f32 ).max(image.height() as f32));
-                    let scale_factor = (self.app_settings.layer_size.x.clone().max(self.app_settings.layer_size.y.clone())) / max_original_size;
+                    let scale_factor = (self.app_settings.layer_size.clone().x.max(self.app_settings.layer_size.clone().y)) / max_original_size;
                     self.app_settings.import_image_widget = ImportImageWidget {
                         is_open: true,
                         texture: Some(new_texture),
