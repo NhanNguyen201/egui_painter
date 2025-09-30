@@ -109,7 +109,8 @@ impl AppComponentExt for Canvas {
                 let events = ui.input(|i| i.events.clone());
                 for event in events.iter() {
                     if let Event::MouseWheel { unit: _, delta, modifiers: _ } = event {
-                        ctx.app_state.layers_container.transform.scale +=  delta.y * 0.05;
+                        let scale = ctx.app_state.layers_container.transform.scale.clone();
+                        ctx.app_state.layers_container.transform.scale =  (scale + delta.y * 0.05).max(0.2);
                     }
                 }
                
